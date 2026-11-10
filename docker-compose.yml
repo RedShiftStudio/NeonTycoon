@@ -1,0 +1,66 @@
+services:
+  postgres:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+  redis:
+    image: redis:7-alpine
+    command: redis-server --save 60 1000 --appendonly yes
+    volumes:
+      - redisdata:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    environment:
+      ConnectionStrings__Game: Host=postgres;Database=${POSTGRES_DB};Username=${POSTGRES_USER};Password=${POSTGRES_PASSWORD}
+      REDIS: redis:6379
+      JWT_SECRET: ${JWT_SECRET}
+      BOT_TOKEN: ${BOT_TOKEN}
+      PUBLIC_ORIGIN: ${PUBLIC_ORIGIN}
+    depends_on:
+      postgres: {condition: service_healthy}
+      redis: {condition: service_healthy}
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "--fail", "--silent", "http://localhost:8080/health/ready"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+  web:
+    build:
+      context: ./src/neon-tycoon-web
+      args:
+        VITE_BOT_USERNAME: ${VITE_BOT_USERNAME}
+    environment:
+      DOMAIN: ${DOMAIN}
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      api: {condition: service_started}
+    restart: unless-stopped
+volumes:
+  pgdata:
+  redisdata:
+  caddy_data:
+  caddy_config:

@@ -1,0 +1,8 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/NeonTycoon.Api/NeonTycoon.Api.csproj" />
+    <Project Path="src/NeonTycoon.Application/NeonTycoon.Application.csproj" />
+    <Project Path="src/NeonTycoon.Domain/NeonTycoon.Domain.csproj" />
+    <Project Path="src/NeonTycoon.Infrastructure/NeonTycoon.Infrastructure.csproj" />
+  </Folder>
+</Solution>
